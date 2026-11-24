@@ -38,7 +38,7 @@ begin
   end if;
 
   insert into public.launcher_profiles (user_id, username, role)
-  values (new.id, requested_username, 'player');
+  values (new.id, lower(requested_username), 'player');
   return new;
 end;
 $$;
