@@ -32,6 +32,16 @@ Register your own account once. In Supabase Dashboard → Authentication → Use
 ## 5. Admin invitations
 An authenticated owner calls `admin-invites` with `{"action":"create"}`. The returned random invitation is valid for 24 hours and can be used once. The invited user must already have a launcher account, then calls `{"action":"redeem","inviteCode":"..." }`. The server checks the caller's session and uses a database function to redeem the code atomically.
 
+## 6. Owner panel API
+The authenticated owner can also call `admin-invites` with:
+- `{"action":"list-users"}` to list up to 500 launcher accounts.
+- `{"action":"set-blocked","userId":"...","blocked":true}` to block/unblock a player or admin.
+- `{"action":"remove-admin","userId":"..."}` to demote an admin to player.
+- `{"action":"settings-read"}` to read dynamic launcher settings.
+- `{"action":"settings-update","key":"announcement","value":"..."}` to update the announcement. Allowed keys: `server_address`, `announcement`, `home_banner`, `featured_mods`.
+
+These are server-checked actions. The app still needs an owner/admin UI and must call this function using the signed-in user's access token.
+
 ## Security
 - Clients cannot write role or blocked-state fields.
 - Owner/admin privileges are checked server-side.
