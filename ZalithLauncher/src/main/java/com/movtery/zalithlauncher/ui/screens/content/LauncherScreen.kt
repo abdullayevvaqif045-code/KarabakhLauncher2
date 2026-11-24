@@ -95,8 +95,6 @@ import com.movtery.zalithlauncher.ui.components.CutoutBox
 import com.movtery.zalithlauncher.ui.components.MarqueeText
 import com.movtery.zalithlauncher.ui.components.PetModelView
 import com.movtery.zalithlauncher.ui.components.ScalingIconButton
-import com.movtery.zalithlauncher.ui.components.animated
-import com.movtery.zalithlauncher.ui.components.rememberAnimatedContext
 import com.movtery.zalithlauncher.ui.guide.GuideKeys
 import com.movtery.zalithlauncher.ui.screens.NestedNavKey
 import com.movtery.zalithlauncher.ui.screens.NormalNavKey
@@ -269,7 +267,6 @@ private fun ContentMenu(
     onOpenVersionSettings: (Version) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val ctx = rememberAnimatedContext(isVisible = isVisible)
     val gridState = rememberCardGridState()
 
     CompositionLocalProvider(
@@ -282,7 +279,6 @@ private fun ContentMenu(
             isVisible = isVisible,
             modifier = modifier
                 .fillMaxSize()
-                .animated(ctx)
         )
     }
 }
@@ -709,8 +705,6 @@ private fun ActionMenu(
     toVersionManageScreen: () -> Unit = {},
     toVersionSettingsScreen: () -> Unit = {}
 ) {
-    val ctx = rememberAnimatedContext(isVisible = isVisible)
-
     ActionMenuContent(
         modifier = modifier
             .graphicsLayer {
@@ -718,7 +712,7 @@ private fun ActionMenu(
                 scaleX = scale
                 scaleY = scale
             }
-            .animated(ctx, from = swapDirection),
+            ,
         dockedSide = dockedSide,
         onLaunchGame = onLaunchGame,
         toAccountManageScreen = toAccountManageScreen,
