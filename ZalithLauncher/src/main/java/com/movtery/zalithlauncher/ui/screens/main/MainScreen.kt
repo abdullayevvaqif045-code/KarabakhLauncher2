@@ -532,9 +532,15 @@ private fun NavigationUI(
                         backStackViewModel = screenBackStackModel,
                         navigateToVersions = navigateToVersions,
                         onLaunchGame = { version ->
-                            eventViewModel.sendEvent(
-                                EventViewModel.Event.Launch.Game(version)
-                            )
+                            val target = (version ?: VersionsManager.currentVersion.value)?.takeIf { it.isValid() }
+                            if (target != null) {
+                                eventViewModel.sendEvent(
+                                    EventViewModel.Event.Launch.PlayServer(target, "karabakhnw.mcsh.gg")
+                                )
+                            } else {
+                                eventViewModel.sendToast(androidText(R.string.game_launch_no_version))
+                                screenBackStackModel.mainScreen.navigateTo(NormalNavKey.VersionsManager)
+                            }
                         },
                         onQuickPlayServer = { version, address ->
                             val target = (version ?: VersionsManager.currentVersion.value)?.takeIf { it.isValid() }
