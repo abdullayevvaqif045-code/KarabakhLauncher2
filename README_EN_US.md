@@ -1,4 +1,11 @@
-# Zalith Launcher 2
+# KarabakhLauncher
+
+> **Unofficial modified version.** This project is not affiliated with or endorsed by the original Zalith Launcher developers. It is based on the GPL-3.0-licensed Zalith Launcher 2 source code. Original copyright notices and license terms are retained.
+
+# Original project acknowledgements
+This launcher is derived from [Zalith Launcher 2](https://github.com/ZalithLauncher/ZalithLauncher2). See the upstream project and its `LICENSE` for original notices and additional terms.
+
+
 ![Downloads](https://img.shields.io/github/downloads/ZalithLauncher/ZalithLauncher2/total)
 [![Sponsor](https://img.shields.io/badge/sponsor-30363D?logo=GitHub-Sponsors)](https://afdian.com/a/MovTery)
 
