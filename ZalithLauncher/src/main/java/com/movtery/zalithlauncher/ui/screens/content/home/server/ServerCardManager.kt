@@ -148,6 +148,14 @@ object ServerCardManager {
         _cards.value = loadRecords().map { record ->
             ServerCardState(record, ServerCardPingStatus.Loading)
         }
+        // KarabakhLauncher: ilk açılışda əsas server kartını avtomatik əlavə et.
+        // İstifadəçi sonradan digər serverləri də əlavə edib seçə bilər.
+        if (_cards.value.isEmpty()) {
+            addCard(
+                name = "KarabakhNW",
+                serverIp = "karabakhnw.mcsh.gg"
+            )
+        }
         //首次解析绑定版本
         recheckVersions()
         //版本列表刷新后同步绑定版本的可用性
