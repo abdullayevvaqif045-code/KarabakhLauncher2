@@ -89,7 +89,6 @@ import com.movtery.zalithlauncher.game.version.installed.VersionsManager
 import com.movtery.zalithlauncher.setting.LauncherSettings
 import com.movtery.zalithlauncher.setting.enums.ActionMenuSide
 import com.movtery.zalithlauncher.ui.base.BaseScreen
-import com.movtery.zalithlauncher.ui.components.AnimatedDirection
 import com.movtery.zalithlauncher.ui.components.BackgroundCard
 import com.movtery.zalithlauncher.ui.components.CutoutBox
 import com.movtery.zalithlauncher.ui.components.MarqueeText
@@ -247,7 +246,6 @@ fun LauncherScreen(
                         isVisible = isVisible,
                         dockedSide = dockedSide,
                         onLaunchGame = onLaunchGame,
-                        swapDirection = if (dockedSide == ActionMenuSide.END) AnimatedDirection.Right else AnimatedDirection.Left,
                         pickUpScale = { dragState.scale },
                         toAccountManageScreen = toAccountManageScreen,
                         toVersionManageScreen = toVersionManageScreen,
@@ -698,7 +696,6 @@ private fun ActionMenu(
     isVisible: Boolean,
     dockedSide: ActionMenuSide,
     onLaunchGame: (Version?) -> Unit,
-    swapDirection: AnimatedDirection,
     pickUpScale: () -> Float,
     modifier: Modifier = Modifier,
     toAccountManageScreen: () -> Unit = {},
