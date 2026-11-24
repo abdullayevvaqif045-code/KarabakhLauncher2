@@ -711,8 +711,7 @@ private fun ActionMenu(
                 val scale = pickUpScale()
                 scaleX = scale
                 scaleY = scale
-            }
-            ,
+            },
         dockedSide = dockedSide,
         onLaunchGame = onLaunchGame,
         toAccountManageScreen = toAccountManageScreen,
