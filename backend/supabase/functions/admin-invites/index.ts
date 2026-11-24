@@ -36,20 +36,29 @@ Deno.serve(async (req) => {
   const { data: userData, error: userError } = await authClient.auth.getUser();
   if (userError || !userData.user) return json({ error: "Invalid session" }, 401);
   const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  let body: { action?: string; inviteCode?: string };
+  let body: { action?: string; inviteCode?: string; userId?: string; blocked?: boolean; key?: string; value?: unknown };
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
 
+  const { data: caller, error: callerError } = await admin.from("launcher_profiles")
+    .select("role,is_blocked").eq("user_id", userData.user.id).maybeSingle();
+  if (callerError) return json({ error: "Could not verify permissions" }, 500);
+  if (!caller || caller.is_blocked) return json({ error: "Account is blocked" }, 403);
+  const isOwner = caller.role === "owner";
+
+  if (body.action === "settings-read") {
+    const { data, error } = await admin.from("launcher_settings").select("setting_key,setting_value,updated_at");
+    if (error) return json({ error: "Could not load launcher settings" }, 500);
+    return json({ settings: data ?? [] });
+  }
+
   if (body.action === "create") {
-    const { data: profile, error } = await admin.from("launcher_profiles")
-      .select("role,is_blocked").eq("user_id", userData.user.id).maybeSingle();
-    if (error) return json({ error: "Could not verify permissions" }, 500);
-    if (!profile || profile.role !== "owner" || profile.is_blocked) return json({ error: "Only the active owner can create admin invitations" }, 403);
+    if (!isOwner) return json({ error: "Only the owner can create admin invitations" }, 403);
     const code = newInviteCode();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    const { error: insertError } = await admin.from("admin_invites").insert({
+    const { error } = await admin.from("admin_invites").insert({
       invite_code_hash: await sha256(code), created_by: userData.user.id, expires_at: expiresAt,
     });
-    if (insertError) return json({ error: "Could not create invitation" }, 500);
+    if (error) return json({ error: "Could not create invitation" }, 500);
     return json({ inviteCode: code, expiresAt });
   }
 
@@ -63,5 +72,49 @@ Deno.serve(async (req) => {
     if (data !== true) return json({ error: "Invitation is invalid, expired, or already used" }, 400);
     return json({ success: true, role: "admin" });
   }
+
+  if (!isOwner) return json({ error: "Owner permission required" }, 403);
+
+  if (body.action === "list-users") {
+    const { data, error } = await admin.from("launcher_profiles")
+      .select("user_id,username,role,is_blocked,created_at").order("created_at", { ascending: false }).limit(500);
+    if (error) return json({ error: "Could not load users" }, 500);
+    return json({ users: data ?? [] });
+  }
+
+  if (body.action === "set-blocked") {
+    if (!body.userId || typeof body.blocked !== "boolean") return json({ error: "userId and blocked are required" }, 400);
+    if (body.userId === userData.user.id) return json({ error: "You cannot block your own owner account" }, 400);
+    const { data: target, error: targetError } = await admin.from("launcher_profiles")
+      .select("role").eq("user_id", body.userId).maybeSingle();
+    if (targetError) return json({ error: "Could not verify target account" }, 500);
+    if (!target || target.role === "owner") return json({ error: "Target account cannot be changed" }, 400);
+    const { error } = await admin.from("launcher_profiles").update({ is_blocked: body.blocked })
+      .eq("user_id", body.userId);
+    if (error) return json({ error: "Could not update account" }, 500);
+    return json({ success: true });
+  }
+
+  if (body.action === "remove-admin") {
+    if (!body.userId || body.userId === userData.user.id) return json({ error: "Valid userId is required" }, 400);
+    const { error } = await admin.from("launcher_profiles").update({ role: "player" })
+      .eq("user_id", body.userId).eq("role", "admin");
+    if (error) return json({ error: "Could not remove admin role" }, 500);
+    return json({ success: true });
+  }
+
+  if (body.action === "settings-update") {
+    const allowed = new Set(["server_address", "announcement", "home_banner", "featured_mods"]);
+    if (!body.key || !allowed.has(body.key) || body.value === undefined) {
+      return json({ error: "Invalid setting key or value" }, 400);
+    }
+    if (JSON.stringify(body.value).length > 12000) return json({ error: "Setting value is too large" }, 413);
+    const { error } = await admin.from("launcher_settings").upsert({
+      setting_key: body.key, setting_value: body.value, updated_by: userData.user.id, updated_at: new Date().toISOString(),
+    });
+    if (error) return json({ error: "Could not update launcher setting" }, 500);
+    return json({ success: true });
+  }
+
   return json({ error: "Unknown action" }, 400);
 });
