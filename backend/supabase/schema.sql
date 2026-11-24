@@ -141,3 +141,26 @@ grant execute on function public.redeem_launcher_admin_invite(text, uuid) to ser
 -- update public.launcher_profiles
 --    set role = 'owner'
 --  where user_id = 'YOUR_AUTH_USER_UUID';
+
+
+-- Dynamic launcher content that the owner can change without rebuilding the APK.
+create table if not exists public.launcher_settings (
+  setting_key text primary key,
+  setting_value jsonb not null,
+  updated_by uuid references auth.users(id),
+  updated_at timestamptz not null default now()
+);
+alter table public.launcher_settings enable row level security;
+drop policy if exists "authenticated users can read launcher settings" on public.launcher_settings;
+create policy "authenticated users can read launcher settings"
+on public.launcher_settings for select to authenticated using (true);
+revoke insert, update, delete on public.launcher_settings from anon, authenticated;
+grant select on public.launcher_settings to authenticated;
+
+insert into public.launcher_settings (setting_key, setting_value)
+values
+  ('server_address', '"karabakhnw.mcsh.gg"'::jsonb),
+  ('announcement', '""'::jsonb),
+  ('home_banner', '""'::jsonb),
+  ('featured_mods', '[]'::jsonb)
+on conflict (setting_key) do nothing;
