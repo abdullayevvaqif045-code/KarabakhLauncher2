@@ -36,14 +36,14 @@ Deno.serve(async (req) => {
     return json({ error: "Password must be 8-72 characters" }, 400);
   }
 
-  const username = body.username;
+  const username = body.username.toLowerCase();
   const email = internalEmail(username);
   const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const client = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
   if (body.action === "register") {
     const { data: existing, error: lookupError } = await admin
-      .from("launcher_profiles").select("user_id").ilike("username", username).maybeSingle();
+      .from("launcher_profiles").select("user_id").eq("username", username).maybeSingle();
     if (lookupError) return json({ error: "Could not check username" }, 500);
     if (existing) return json({ error: "Username is already taken" }, 409);
 
