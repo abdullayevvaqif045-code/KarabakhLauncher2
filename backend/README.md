@@ -1,26 +1,39 @@
-# KarabakhLauncher backend setup
+# KarabakhLauncher backend
 
-This folder contains the initial Supabase database security schema for launcher accounts and roles.
+This folder contains the Supabase database schema and Edge Functions for launcher accounts and role management.
 
-## Setup
-1. Create a Supabase project in your own Supabase account.
-2. Open **SQL Editor** and run `schema.sql`.
-3. Create the first launcher account through the future launcher registration flow.
-4. In Supabase Dashboard, find that user's UUID in Authentication → Users.
-5. Replace the placeholders in the one-time owner bootstrap SQL at the bottom of `schema.sql`, execute it manually, then remove/comment that bootstrap statement.
-6. Keep the project's `service_role` key private. It must never be placed in the APK, GitHub repository, or sent in chat.
+## 1. Create the project
+Create a Supabase project, then open **SQL Editor** and run the complete contents of `supabase/schema.sql`.
 
-## Security model
-- New accounts default to `player`.
-- A client cannot promote itself, edit its role, or change its blocked state.
-- Owner/admin checks are performed by database functions.
-- Admin invites must be generated and redeemed by a server-side Edge Function with expiry and one-time use.
-- The owner account is assigned manually once; there is no public owner-registration path.
+## 2. Configure Edge Function secrets
+In Supabase Dashboard → Edge Functions → Secrets, configure:
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (server only; never send it in chat or put it in the APK/repository)
 
-## Still required before account login works
-- Supabase project URL and publishable/anon key configured as public Android client settings.
-- Server-side Edge Function for username/password sign-in and admin invitations.
-- Android login/register UI wired to Supabase Auth and the username mapping flow.
-- Server-side account blocking checks before privileged actions.
+Deploy both functions with the Supabase CLI:
+```sh
+supabase functions deploy launcher-auth
+supabase functions deploy admin-invites
+```
 
-This is a secure schema foundation, not a finished or connected authentication system. Do not treat the launcher as having working login/admin access until the remaining items are implemented and tested.
+## 3. Username/password accounts
+The `launcher-auth` function exposes POST actions:
+- `{"action":"register","username":"Player_01","password":"at-least-8-characters"}`
+- `{"action":"login","username":"Player_01","password":"at-least-8-characters"}`
+
+It maps usernames to internal non-mailbox addresses under `accounts.karabakhnw.mcsh.gg`; users do not need to enter an email address. This setup does not send email or provide email-based password recovery. Add a verified recovery process before public production use.
+
+New profiles are always created as `player`. The function rejects blocked accounts at login.
+
+## 4. Make the first account the owner
+Register your own account once. In Supabase Dashboard → Authentication → Users, copy that account's UUID. Run the one-time owner update shown at the bottom of `supabase/schema.sql`, replacing `YOUR_AUTH_USER_UUID`. Never create a public owner-registration path.
+
+## 5. Admin invitations
+An authenticated owner calls `admin-invites` with `{"action":"create"}`. The returned random invitation is valid for 24 hours and can be used once. The invited user must already have a launcher account, then calls `{"action":"redeem","inviteCode":"..." }`. The server checks the caller's session and uses a database function to redeem the code atomically.
+
+## Security
+- Clients cannot write role or blocked-state fields.
+- Owner/admin privileges are checked server-side.
+- The service-role key is server-only.
+- Do not treat the launcher as having a connected login UI until Android integration and device testing are complete.
